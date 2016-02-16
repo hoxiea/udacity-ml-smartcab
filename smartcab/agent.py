@@ -24,11 +24,11 @@ class LearningAgent(Agent):
         self.current_state = None
         self.q_map = dict()
         self.q_boost = 1   # priority given to initial Q-value when action matches next_waypoint
-        self.alpha = 0.5   # learning rate
+        self.alpha = 0.8   # learning rate: higher means you care more about future and less about past
         self.gamma = 0.8   # discount rate
 
         for key, value in kwargs.iteritems():
-            if key == "q_boost":
+            if "boost" in key.lower():
                 self.q_boost = value
             elif key == "alpha":
                 self.alpha = value
@@ -67,7 +67,7 @@ class LearningAgent(Agent):
         inputs = self.env.sense(self)
         deadline = self.env.get_deadline(self)
 
-        # Update state
+        # Update current_state based on surroundings
         light = inputs['light']
         next_waypoint = self.next_waypoint
         self.current_state = State(light, next_waypoint)
@@ -105,6 +105,7 @@ class LearningAgent(Agent):
                 print "Reward received: {}".format(reward)
                 print "Updated value for ({}, {}, {}): {}".format(light, next_waypoint, action, updated_q_value)
                 print "LA.update(): deadline = {}, inputs = {}, action = {}, reward = {}".format(deadline, inputs, action, reward)
+                print
             else:
                 print "Not learning; no update made"
 
@@ -119,17 +120,19 @@ class LearningAgent(Agent):
                 output.append("\t{}: {:.2f}".format(action, q_value))
         return "\n".join(output)
 
-def run():
+
+def run(use_deadline=False):
     """Run the agent for a finite number of trials."""
 
     # Set up environment and agent
     e = Environment()  # create environment (also adds some dummy traffic)
     a = e.create_agent(LearningAgent)  # create agent
-    e.set_primary_agent(a, enforce_deadline=True)  # set agent to track
+    e.set_primary_agent(a, enforce_deadline=use_deadline)  # set agent to track
 
     # Now simulate it
-    sim = Simulator(e, update_delay=.3)  # reduce update_delay to speed up simulation
-    sim.run(n_trials=100)  # press Esc or close pygame window to quit
+    sim = Simulator(e, update_delay=0.01)
+    sim.run(n_trials=100)
+    print a.format_q_map()
 
 
 def evaluate_performance():
@@ -157,11 +160,12 @@ def evaluate_performance():
         print a.format_q_map()
         raw_input("Press any key to start this agent's evaluation trials")
         results = sim.run(n_trials=num_evaluation_trials)
+
         all_results[param_values] = results
 
     return all_results
 
 
 if __name__ == '__main__':
-    # run()
-    evaluate_performance()
+    run()
+    # evaluate_performance()
