@@ -126,7 +126,13 @@ class Environment(object):
 
     def sense(self, agent):
         """
-        TODO: document
+        Provide information about the agent's immediate environment.
+
+        Information returned includes:
+        - light in {'red', 'green'}  (a function of agent's heading and TrafficLight.state)
+        - oncoming in {None, 'left', 'right', 'forward'} (activity across the intersection)
+        - left in {None, 'left', 'right', 'forward'} (activity to agent's left in intersection)
+        - right in {None, 'left', 'right', 'forward'} (activity to agent's right in intersection)
         """
         assert agent in self.agent_states, "Unknown agent!"
 
