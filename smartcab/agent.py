@@ -5,18 +5,7 @@ from simulator import Simulator
 from collections import namedtuple
 from itertools import product
 
-# State = namedtuple('State', 'light oncoming left right next_waypoint')
 State = namedtuple('State', 'light next_waypoint')
-
-# TODO: can we get away with a simpler state? I'm not sure that 'right' provides any useful information
-# If the light is red:
-# - And there's nobody to your left going forward, then you can take a right on red
-# - Don't need to worry about oncoming, since light is red for them too, and no left thru red light
-# - Don't need to worry about right, since nothing they do can interfere with you
-# If the light is green:
-# - You can go forward or right with the right of way and no problems
-# - You can go left if there's nobody oncoming going forward
-# In both cases, right is irrelevant
 
 class LearningAgent(Agent):
     """
@@ -38,9 +27,6 @@ class LearningAgent(Agent):
         self.q_map = dict()
 
         valid_light = ['green', 'red']   # as returned by Environment.sense
-        # valid_oncoming = Environment.valid_inputs['oncoming']
-        # valid_left = Environment.valid_inputs['left']
-        # valid_right = Environment.valid_inputs['right']
         valid_waypoints = Environment.valid_actions
         for state in product(valid_light, valid_waypoints):
             self.q_map[state] = dict()
@@ -55,9 +41,6 @@ class LearningAgent(Agent):
     def reset(self, destination=None):
         self.planner.route_to(destination)
         self.current_state = None
-        # I don't think we want to reset q_map here... all the agents get reset
-        # after each trial, so if we're going to remember what we learn, we
-        # shouldn't clear out q_map
         # TODO: reset any other variables here
 
     def update(self, t, debug=True):
@@ -68,9 +51,6 @@ class LearningAgent(Agent):
 
         # Update state
         light = inputs['light']
-        # oncoming = inputs['oncoming']
-        # left = inputs['left']
-        # right = inputs['right']
         next_waypoint = self.next_waypoint
         self.current_state = State(light, next_waypoint)
         if debug:
@@ -88,7 +68,6 @@ class LearningAgent(Agent):
         reward = self.env.act(self, action)
 
         # Calling act causes location to change if a valid move was made
-        # But will other agents have moved, giving us updated intersection information?
         new_status = self.env.sense(self)
         new_light = new_status['light']
         new_waypoint = self.planner.next_waypoint()
