@@ -48,6 +48,12 @@ class Simulator(object):
 
     def run(self, n_trials=1):
         self.quit = False
+
+        # Keep track of primary agent's performance
+        net_rewards = []
+        reached_dests = []
+
+        # Run your trials
         for trial in xrange(n_trials):
             print "Simulator.run(): Trial {}".format(trial)  # [debug]
             self.env.reset()
@@ -82,11 +88,22 @@ class Simulator(object):
                 except KeyboardInterrupt:
                     self.quit = True
                 finally:
-                    if self.quit or self.env.done:
+                    if self.quit:
                         break
+                    elif self.env.done:
+                        if self.env.primary_agent is None:
+                            break
+                        else:
+                            pa = self.env.primary_agent
+                            pa_agent_state = self.env.agent_states[pa]
+                            net_rewards.append(pa.net_reward)
+                            reached_dests.append(pa_agent_state['location'] == pa_agent_state['destination'])
+                            break
 
             if self.quit:
                 break
+
+        return net_rewards, reached_dests
 
     def render(self):
         # Clear screen
