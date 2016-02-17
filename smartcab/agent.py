@@ -164,16 +164,15 @@ def evaluate_performance():
         e.set_primary_agent(a, enforce_deadline=True)
 
         sim = Simulator(e, update_delay=.001)
-        raw_input("Press any key to start this agent's learning trials")
+        raw_input("Press ENTER to start this agent's learning trials")
         sim.run(num_training_trials)
 
         a.learning = False
         print a.format_q_map()
-        raw_input("Press any key to start this agent's evaluation trials")
-        net_rewards, reached_dests = sim.run(num_evaluation_trials)
-        print reached_dests
-        print net_rewards
-        raw_input("Metrics available")
+        raw_input("Press ENTER to start this agent's evaluation trials")
+        performances = sim.run(num_evaluation_trials)
+        print performances
+        raw_input("Metrics available; hit ENTER to run prepare next trial")
 
         # TODO: Update all_results[param_values]
 

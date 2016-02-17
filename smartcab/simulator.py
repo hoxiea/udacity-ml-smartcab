@@ -50,8 +50,7 @@ class Simulator(object):
         self.quit = False
 
         # Keep track of primary agent's performance
-        net_rewards = []
-        reached_dests = []
+        pa_performances = []
 
         # Run your trials
         for trial in xrange(n_trials):
@@ -94,16 +93,13 @@ class Simulator(object):
                         if self.env.primary_agent is None:
                             break
                         else:
-                            pa = self.env.primary_agent
-                            pa_agent_state = self.env.agent_states[pa]
-                            net_rewards.append(pa.net_reward)
-                            reached_dests.append(pa_agent_state['location'] == pa_agent_state['destination'])
+                            pa_performances.append(self.env.primary_agent_performance())
                             break
 
             if self.quit:
                 break
 
-        return net_rewards, reached_dests
+        return pa_performances if pa_performances else None
 
     def render(self):
         # Clear screen

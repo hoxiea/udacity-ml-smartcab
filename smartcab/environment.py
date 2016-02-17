@@ -1,8 +1,10 @@
 import time
 import random
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 
 from simulator import Simulator
+
+PrimaryAgentPerformance = namedtuple('PrimaryAgentPerformance', 'reached_dest net_reward')
 
 class TrafficLight(object):
     """A traffic light that switches periodically."""
@@ -210,6 +212,29 @@ class Environment(object):
             #print "Environment.act() [POST]: location: {}, heading: {}, action: {}, reward: {}".format(location, heading, action, reward)  # [debug]
 
         return reward
+
+    def primary_agent_performance(self):
+        """
+        Return a PrimaryAgentPerformance namedtuple, indicating how the
+        environment's primary agent (if one exists) is doing:
+        - Has the PA reached its destination?
+        - What are the PA's current net_rewards since last being reset?
+
+        If there's no primary agent, this always returns None.
+
+        This would typically called when a trial has finished to see how
+        the PA performed, but it can be used whenever you want PA info.
+        """
+
+        if self.primary_agent is None:
+            return None
+
+        pa = self.primary_agent
+        pa_agent_state = self.agent_states[pa]
+
+        reached_dest = (pa_agent_state['location'] == pa_agent_state['destination'])
+
+        return PrimaryAgentPerformance(reached_dest, self.primary_agent.net_reward)
 
     def compute_dist(self, a, b):
         """L1 distance between two points."""
