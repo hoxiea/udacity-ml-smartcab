@@ -101,6 +101,47 @@ class Simulator(object):
 
         return pa_performances if pa_performances else None
 
+    def run_no_graphics(self, n_trials=1):
+        self.quit = False
+        pygame.display.quit()
+
+        # Keep track of primary agent's performance
+        pa_performances = []
+
+        # Run your trials
+        for trial in xrange(n_trials):
+            print "Simulator.run(): Trial {}".format(trial)  # [debug]
+            self.env.reset()
+            self.current_time = 0.0
+            self.last_updated = 0.0
+            self.start_time = time.time()
+            while True:
+                self.current_time = time.time() - self.start_time
+                #print "Simulator.run(): current_time = {:.3f}".format(self.current_time)
+                try:
+                    # Update environment
+                    if self.current_time - self.last_updated >= self.update_delay:
+                        self.env.step()
+                        self.last_updated = self.current_time
+
+                except KeyboardInterrupt:
+                    self.quit = True
+                finally:
+                    if self.quit:
+                        break
+                    elif self.env.done:
+                        if self.env.primary_agent is None:
+                            break
+                        else:
+                            pa_performances.append(self.env.primary_agent_performance())
+                            break
+
+            if self.quit:
+                break
+
+        return pa_performances if pa_performances else None
+
+
     def render(self):
         # Clear screen
         self.screen.fill(self.bg_color)

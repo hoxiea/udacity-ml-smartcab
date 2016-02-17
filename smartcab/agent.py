@@ -147,8 +147,6 @@ def run(use_deadline=False):
 
 
 def evaluate_performance():
-    e = Environment()
-
     alpha_values = [.2, .4, .6, .8]
     gamma_values = [.2, .4, .6, .8]
     boost_values = [0, 0.5, 1]
@@ -157,28 +155,33 @@ def evaluate_performance():
     num_evaluation_trials = 15
     all_results = dict()
 
+    show_graphics = False
+
     for param_values in product(alpha_values, gamma_values, boost_values):
+        e = Environment()
+        sim = Simulator(e, update_delay=.001)
+
         alpha, gamma, boost = param_values
         a = e.create_agent(LearningAgent, alpha=alpha, gamma=gamma, q_boost=boost)
-        print a
+        # print a
         e.set_primary_agent(a, enforce_deadline=True)
 
-        sim = Simulator(e, update_delay=.001)
-        raw_input("Press ENTER to start this agent's learning trials")
-        sim.run(num_training_trials)
+        # raw_input("Press ENTER to start this agent's learning trials")
+        sim.run(num_training_trials) if show_graphics else sim.run_no_graphics(num_training_trials)
 
         a.learning = False
-        print a.format_q_map()
-        raw_input("Press ENTER to start this agent's evaluation trials")
-        performances = sim.run(num_evaluation_trials)
-        print performances
-        raw_input("Metrics available; hit ENTER to run prepare next trial")
+        # print a.format_q_map()
+        # raw_input("Press ENTER to start this agent's evaluation trials")
+        perfs = sim.run(num_training_trials) if show_graphics else sim.run_no_graphics(num_evaluation_trials)
+        print perfs
+        # raw_input("Metrics available; hit ENTER to run prepare next trial")
 
         # TODO: Update all_results[param_values]
+        all_results[param_values] = perfs
 
     return all_results
 
 
 if __name__ == '__main__':
     # run(True)
-    evaluate_performance()
+    results = evaluate_performance()
