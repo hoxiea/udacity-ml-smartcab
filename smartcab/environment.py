@@ -4,7 +4,9 @@ from collections import OrderedDict, namedtuple
 
 from simulator import Simulator
 
-PrimaryAgentPerformance = namedtuple('PrimaryAgentPerformance', 'reached_dest net_reward')
+PrimaryAgentPerformance = \
+    namedtuple('PrimaryAgentPerformance', 'reached_dest net_reward')
+
 
 class TrafficLight(object):
     """A traffic light that switches periodically."""
@@ -240,6 +242,11 @@ class Environment(object):
         """L1 distance between two points."""
         return abs(b[0] - a[0]) + abs(b[1] - a[1])
 
+    @property
+    def pixel_dimensions(self):
+        hor_pixels = (self.grid_size[0] + 1) * self.block_size
+        vert_pixels = (self.grid_size[1] + 1) * self.block_size
+        return (hor_pixels, vert_pixels)
 
 class Agent(object):
     """Base class for all agents."""
