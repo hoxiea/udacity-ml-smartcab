@@ -1,11 +1,62 @@
-import random
 from environment import Agent, Environment
 from planner import RoutePlanner
 from simulator import Simulator
+
+import random
 from collections import namedtuple
 from itertools import product
+from numpy.random import choice
+from math import exp
 
 State = namedtuple('State', 'light next_waypoint')
+
+# Exploration-exploitation strategies
+def explorer(state_q_values, trial):
+    """
+    An explorer always returns a random action choice, ignoring Q values.
+    The trial is also ignored.
+    """
+    return choice(state_q_values.keys())
+
+def exploiter(state_q_values, trial):
+    """
+    An exploiter always returns the action with the largest Q value.
+    The trial is also ignored.
+    """
+    return max(state_q_values, key=state_q_values.get)
+
+def weighted_q_average(state_q_values, trial):
+    """
+    Take a weighted random sample of the available actions, where the weights
+    are the Q values.
+
+    https://docs.python.org/2/library/stdtypes.html#dict.items says that if a
+    dictionary isn't modified, then the order of items returned by the methods
+    used below will remain consistent.
+    """
+    total = sum(w for w in state_q_values.itervalues())
+    probs = [q / total for q in state_q_values.itervalues()]   # normalize
+    return choice(state_q_values.keys(), p=probs)
+
+def decay1(state_q_values, trial):
+    """
+    Explore with probability p and exploit with probability (1-p), where
+    p(trial) = exp(-trial / 30)
+
+    The 30 was picked to decay from 1 to 0 over ~100 trials at a reasonable rate:
+    - On trial 0,  we explore w.p. 1
+    - On trial 1,  we explore w.p. 0.967
+    - On trial 10, we explore w.p. 0.717
+    - On trial 50, we explore w.p. 0.189
+    - On trial 99, we explore w.p. 0.037
+    """
+    p = exp(-1.0 * trial / 30)
+    if p <= random.random():
+        return explorer(state_q_values, trial)
+    else:
+        return exploiter(state_q_values, trial)
+
+
 
 class LearningAgent(Agent):
     """
@@ -33,9 +84,10 @@ class LearningAgent(Agent):
         self.q_map = dict()
 
         # Q-Learning default parameters
+        self.strategy = explorer
         self.q_boost = 0   # boost added to initial Q-value when action matches next_waypoint
-        self.alpha = 0.8   # learning rate: higher means you care more about future and less about past
-        self.gamma = 0.8   # discount rate
+        self.alpha = 0.5   # learning rate, i.e. how much of q-value depends on future versus past learning
+        self.gamma = 0.8   # discount rate, i.e. how much do you value future rewards
 
         # Update Q-Learning parameters based on supplied keyword-arguments
         for key, value in kwargs.iteritems():
@@ -45,24 +97,41 @@ class LearningAgent(Agent):
                 self.alpha = value
             elif key == "gamma":
                 self.gamma = value
+            elif "strat" in key.lower():
+                self.strategy = value
 
-        # Initialize Q-values for all possible states
+        # Initialize Q-values for all possible states to be random(0,1),
+        # UNLESS you're using a strategy that works better with a different
+        # initialization
         valid_light = ['green', 'red']   # as returned by Environment.sense
         valid_waypoints = Environment.valid_actions
         for state_pair in product(valid_light, valid_waypoints):
             state = State(*state_pair)
             self.q_map[state] = dict()
             for action in Environment.valid_actions:
-                if state.next_waypoint == action:
-                    self.q_map[state][action] = self.q_boost + random.random()
+                if self.strategy == weighted_q_average:
+                    self.q_map[state][action] = 1.0
                 else:
                     self.q_map[state][action] = random.random()
+
+        print self.format_q_map()
+        print self.q_map.keys()
+
+        # Add in the Q-boost
+        for state, q_map in self.q_map.iteritems():
+            for action in Environment.valid_actions:
+                if state.next_waypoint == action:
+                    q_map[action] += self.q_boost
 
         # Should the agent update its q_map in response to environment feedback?
         self.learning = True
 
         # Performance tracking
-        self.net_reward = 0
+        self.net_reward = 0   # reward after each action
+
+        # How many times has this agent been reset?
+        # This is equivalent to how many trials the agent has participated in
+        self.num_resets = 0
 
     def reset(self, destination=None):
         """
@@ -71,6 +140,7 @@ class LearningAgent(Agent):
         self.planner.route_to(destination)
         self.current_state = None
         self.net_reward = 0
+        self.num_resets += 1
 
     def update(self, t, debug=True):
         # Gather inputs
@@ -86,18 +156,18 @@ class LearningAgent(Agent):
             print self.current_state
 
         # Select the action for the current state with the largest Q value
-        action_values = self.q_map[self.current_state]
-        action = max(action_values, key=action_values.get)
+        q_values_current_state = self.q_map[self.current_state]
+        action = self.strategy(q_values_current_state, self.num_resets)
         if debug:
             print "Action choices:"
-            print action_values
+            print q_values_current_state
             print "Selected action: {}".format(action)
 
         # Execute action and get reward
         reward = self.env.act(self, action)
         self.net_reward += reward
 
-        # Calling act causes location to change if a valid move was made
+        # Calling act() causes location to change if a valid move was made
         if self.learning:
             new_status = self.env.sense(self)
             new_light = new_status['light']
@@ -107,7 +177,7 @@ class LearningAgent(Agent):
             # Learn policy based on state, action, reward via Q-Learning update
             previous_value = self.q_map[self.current_state][action]
             future_value = reward + self.gamma * max(self.q_map[new_state].itervalues())
-            updated_q_value = (1 - self.alpha) * previous_value + (self.alpha * future_value)
+            updated_q_value = ((1 - self.alpha) * previous_value) + (self.alpha * future_value)
             self.q_map[self.current_state][action] = updated_q_value
 
         if debug:
@@ -121,7 +191,8 @@ class LearningAgent(Agent):
                 print "Not learning; no update made"
 
     def __str__(self):
-        return "Agent with learning={}, alpha={}, gamma={}, boost={}".format(self.learning, self.alpha, self.gamma, self.q_boost)
+        s = "Agent with learning={}, alpha={}, gamma={}, boost={}, num_trials={}"
+        return s.format(self.learning, self.alpha, self.gamma, self.q_boost, self.num_trials)
 
     def format_q_map(self):
         output = []
@@ -133,8 +204,10 @@ class LearningAgent(Agent):
 
 
 def run(use_deadline=False):
-    """Run the agent for a finite number of trials."""
-
+    """
+    Run the agent for a finite number of trials with graphics, mostly for
+    visual inspection/debugging.
+    """
     # Set up environment and agent
     e = Environment()  # create environment (also adds some dummy traffic)
     a = e.create_agent(LearningAgent, boost=1)  # create agent
@@ -144,6 +217,26 @@ def run(use_deadline=False):
     sim = Simulator(e, update_delay=0.01)
     sim.run(n_trials=100)
     print a.format_q_map()
+
+
+def run_with_params(use_deadline, **agent_params):
+    # Set up environment and agent
+    e = Environment()  # create environment (also adds some dummy traffic)
+    a = e.create_agent(LearningAgent, **agent_params)  # create agent
+    e.set_primary_agent(a, enforce_deadline=use_deadline)  # set agent to track
+
+    # Now simulate it
+    sim = Simulator(e, update_delay=0.01)
+    sim.run(n_trials=100)
+    print a.format_q_map()
+
+
+def q1_random_action():
+    run_with_params(False, strategy=explorer)
+
+
+def q2_max_q_value():
+    run_with_params(True, strategy=exploiter, q_boost=1)
 
 
 def evaluate_performance():
@@ -183,5 +276,6 @@ def evaluate_performance():
 
 
 if __name__ == '__main__':
-    # run(True)
-    results = evaluate_performance()
+    # q1_random_action()
+    q2_max_q_value()
+    # results = evaluate_performance()
