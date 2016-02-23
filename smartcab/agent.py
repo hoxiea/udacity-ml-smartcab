@@ -128,6 +128,7 @@ class LearningAgent(Agent):
 
         # Performance tracking
         self.net_reward = 0   # reward after each action
+        self.net_reward_ever_negative = False
 
         # How many times has this agent been reset?
         # This is equivalent to how many trials the agent has participated in
@@ -140,6 +141,7 @@ class LearningAgent(Agent):
         self.planner.route_to(destination)
         self.current_state = None
         self.net_reward = 0
+        self.net_reward_ever_negative = False
         self.num_resets += 1
 
     def update(self, t, debug=True):
@@ -166,6 +168,8 @@ class LearningAgent(Agent):
         # Execute action and get reward
         reward = self.env.act(self, action)
         self.net_reward += reward
+        if self.net_reward < 0:
+            self.net_reward_ever_negative = True
 
         # Calling act() causes location to change if a valid move was made
         if self.learning:
@@ -203,23 +207,7 @@ class LearningAgent(Agent):
         return "\n".join(output)
 
 
-def run(use_deadline=False):
-    """
-    Run the agent for a finite number of trials with graphics, mostly for
-    visual inspection/debugging.
-    """
-    # Set up environment and agent
-    e = Environment()  # create environment (also adds some dummy traffic)
-    a = e.create_agent(LearningAgent, boost=1)  # create agent
-    e.set_primary_agent(a, enforce_deadline=use_deadline)  # set agent to track
-
-    # Now simulate it
-    sim = Simulator(e, update_delay=0.01)
-    sim.run(n_trials=100)
-    print a.format_q_map()
-
-
-def run_with_params(use_deadline, **agent_params):
+def run_with_params(agent_params, use_deadline=False):
     # Set up environment and agent
     e = Environment()  # create environment (also adds some dummy traffic)
     a = e.create_agent(LearningAgent, **agent_params)  # create agent
@@ -227,16 +215,21 @@ def run_with_params(use_deadline, **agent_params):
 
     # Now simulate it
     sim = Simulator(e, update_delay=0.01)
-    sim.run(n_trials=100)
+    agent_performance = sim.run(n_trials=100)
     print a.format_q_map()
+    print agent_performance
 
 
 def q1_random_action():
-    run_with_params(False, strategy=explorer)
+    run_with_params({'strategy': explorer})
 
 
 def q2_max_q_value():
-    run_with_params(True, strategy=exploiter, q_boost=1)
+    run_with_params({'strategy': exploiter, 'q_boost': 1}, True)
+
+
+def q3_weighted_q_ave():
+    run_with_params({'strategy': weighted_q_average}, True)
 
 
 def evaluate_performance():
@@ -278,4 +271,5 @@ def evaluate_performance():
 if __name__ == '__main__':
     # q1_random_action()
     q2_max_q_value()
+    # q3_weighted_q_ave()
     # results = evaluate_performance()

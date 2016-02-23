@@ -5,7 +5,7 @@ from collections import OrderedDict, namedtuple
 from simulator import Simulator
 
 PrimaryAgentPerformance = \
-    namedtuple('PrimaryAgentPerformance', 'reached_dest net_reward')
+    namedtuple('PrimaryAgentPerformance', 'reached_dest net_reward net_reward_ever_negative')
 
 
 class TrafficLight(object):
@@ -235,8 +235,10 @@ class Environment(object):
         pa_agent_state = self.agent_states[pa]
 
         reached_dest = (pa_agent_state['location'] == pa_agent_state['destination'])
+        net_reward = pa.net_reward
+        net_reward_ever_negative = pa.net_reward_ever_negative
 
-        return PrimaryAgentPerformance(reached_dest, self.primary_agent.net_reward)
+        return PrimaryAgentPerformance(reached_dest, net_reward, net_reward_ever_negative)
 
     def compute_dist(self, a, b):
         """L1 distance between two points."""
