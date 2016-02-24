@@ -207,7 +207,7 @@ class LearningAgent(Agent):
         return "\n".join(output)
 
 
-def run_with_params(agent_params, use_deadline=False):
+def run_with_params(agent_params, use_deadline, show_graphics=True):
     # Set up environment and agent
     e = Environment()  # create environment (also adds some dummy traffic)
     a = e.create_agent(LearningAgent, **agent_params)  # create agent
@@ -215,21 +215,25 @@ def run_with_params(agent_params, use_deadline=False):
 
     # Now simulate it
     sim = Simulator(e, update_delay=0.01)
-    agent_performance = sim.run(n_trials=100)
+    agent_performance = sim.run(100) if show_graphics else sim.run_no_graphics(100)
     print a.format_q_map()
     print agent_performance
+    return agent_performance
 
 
 def q1_random_action():
-    run_with_params({'strategy': explorer})
+    params = {'strategy': explorer}
+    return run_with_params(params, True)
 
 
 def q2_max_q_value():
-    run_with_params({'strategy': exploiter, 'q_boost': 1}, True)
+    params = {'strategy': exploiter, 'q_boost': 1}
+    return run_with_params(params, True, False)
 
 
 def q3_weighted_q_ave():
-    run_with_params({'strategy': weighted_q_average}, True)
+    params = {'strategy': weighted_q_average}
+    return run_with_params(params, True)
 
 
 def evaluate_performance():
@@ -270,6 +274,6 @@ def evaluate_performance():
 
 if __name__ == '__main__':
     # q1_random_action()
-    q2_max_q_value()
+    results = q2_max_q_value()
     # q3_weighted_q_ave()
     # results = evaluate_performance()
