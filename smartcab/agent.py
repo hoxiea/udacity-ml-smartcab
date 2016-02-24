@@ -1,6 +1,6 @@
 from environment import Agent, Environment
 from planner import RoutePlanner
-from simulator import Simulator
+from simulator import Simulator, SimulatorNoGraphics
 
 import random
 from collections import namedtuple
@@ -198,6 +198,18 @@ class LearningAgent(Agent):
         s = "Agent with learning={}, alpha={}, gamma={}, boost={}, num_trials={}"
         return s.format(self.learning, self.alpha, self.gamma, self.q_boost, self.num_trials)
 
+    @property
+    def agent_info(self):
+        info = {
+            'q_boost': self.q_boost,
+            'alpha': self.alpha,
+            'gamma': self.gamma,
+            'strategy': self.strategy.__name__,
+            'q_map': self.q_map,
+            'num_resets': self.num_resets
+        }
+        return info
+
     def format_q_map(self):
         output = []
         for state, actions in self.q_map.iteritems():
@@ -214,26 +226,34 @@ def run_with_params(agent_params, use_deadline, show_graphics=True):
     e.set_primary_agent(a, enforce_deadline=use_deadline)  # set agent to track
 
     # Now simulate it
-    sim = Simulator(e, update_delay=0.01)
-    agent_performance = sim.run(100) if show_graphics else sim.run_no_graphics(100)
+    sim = Simulator(e) if show_graphics else SimulatorNoGraphics(e)
+    agent_performance = sim.run(100)
     print a.format_q_map()
     print agent_performance
-    return agent_performance
+    agent_info = a.agent_info
+    return agent_performance, agent_info
 
 
 def q1_random_action():
     params = {'strategy': explorer}
-    return run_with_params(params, True)
+    return run_with_params(params, False)
 
 
 def q2_max_q_value():
     params = {'strategy': exploiter, 'q_boost': 1}
-    return run_with_params(params, True, False)
+    return run_with_params(params, True)
 
 
 def q3_weighted_q_ave():
     params = {'strategy': weighted_q_average}
-    return run_with_params(params, True)
+    return run_with_params(params, True, False)
+
+def q3_decay1():
+    params = {'strategy': decay1}
+    return run_with_params(params, True, False)
+
+def plot_agent_performances(performances):
+    pass
 
 
 def evaluate_performance():
@@ -249,7 +269,7 @@ def evaluate_performance():
 
     for param_values in product(alpha_values, gamma_values, boost_values):
         e = Environment()
-        sim = Simulator(e, update_delay=.001)
+        sim = Simulator(e, update_delay=0)
 
         alpha, gamma, boost = param_values
         a = e.create_agent(LearningAgent, alpha=alpha, gamma=gamma, q_boost=boost)
@@ -274,6 +294,11 @@ def evaluate_performance():
 
 if __name__ == '__main__':
     # q1_random_action()
-    results = q2_max_q_value()
-    # q3_weighted_q_ave()
+    # performance, info = q2_max_q_value()
+    performance, info = q3_decay1()
     # results = evaluate_performance()
+
+    import matplotlib.pyplot as plt
+    points_net_reward_negative = [(i, p.net_reward) for i, p in enumerate(performance) if p.net_reward_ever_negative]
+    points_net_reward_not_negative = [(i, p.net_reward) for i, p in enumerate(performance) if not p.net_reward_ever_negative]
+    # plt.plot(rewards)
