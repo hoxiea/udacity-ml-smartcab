@@ -8,6 +8,7 @@ from itertools import product
 from numpy.random import choice
 from math import exp, log
 
+# Agent's state: the current traffic light, and where it should go next
 State = namedtuple('State', 'light next_waypoint')
 
 # Exploration-exploitation strategies
@@ -28,7 +29,7 @@ def exploiter(state_q_values, trial):
 def weighted_q_average(state_q_values, trial):
     """
     Take a weighted random sample of the available actions, where the weights
-    are the Q values.
+    are the Q values. The trial is ignored.
 
     https://docs.python.org/2/library/stdtypes.html#dict.items says that if a
     dictionary isn't modified, then the order of items returned by the methods
@@ -166,7 +167,8 @@ class LearningAgent(Agent):
         self.learning = True
 
         # Performance tracking
-        self.net_reward = 0   # reward after each action
+        self.positive_reward_earned = 0
+        self.negative_reward_earned = 0
 
         # How many times has this agent been reset?
         # This is equivalent to how many trials the agent has participated in
@@ -178,7 +180,8 @@ class LearningAgent(Agent):
         """
         self.planner.route_to(destination)
         self.current_state = None
-        self.net_reward = 0
+        self.positive_reward_earned = 0
+        self.negative_reward_earned = 0
         self.num_resets += 1
 
     def update(self, t, debug=True):
@@ -204,7 +207,10 @@ class LearningAgent(Agent):
 
         # Execute action and get reward
         reward = self.env.act(self, action)
-        self.net_reward += reward
+        if reward >= 0:
+            self.positive_reward_earned += reward
+        else:
+            self.negative_reward_earned += reward
 
         # Calling act() causes location to change if a valid move was made
         if self.learning:
@@ -229,10 +235,20 @@ class LearningAgent(Agent):
             else:
                 print "Not learning; no update made"
 
+    # Formatting
     def __str__(self):
         s = "Agent with learning={}, alpha={}, gamma={}, boost={}, num_trials={}"
         return s.format(self.learning, self.alpha, self.gamma, self.q_boost, self.num_trials)
 
+    def format_q_map(self):
+        output = []
+        for state, actions in self.q_map.iteritems():
+            output.append(str(state))
+            for action, q_value in actions.iteritems():
+                output.append("\t{}: {:.2f}".format(action, q_value))
+        return "\n".join(output)
+
+    # Info properties
     @property
     def agent_info(self):
         info = {
@@ -245,14 +261,9 @@ class LearningAgent(Agent):
         }
         return info
 
-    def format_q_map(self):
-        output = []
-        for state, actions in self.q_map.iteritems():
-            output.append(str(state))
-            for action, q_value in actions.iteritems():
-                output.append("\t{}: {:.2f}".format(action, q_value))
-        return "\n".join(output)
-
+    @property
+    def net_rewards(self):
+        return self.positive_reward_earned - self.negative_reward_earned
 
 def run_with_params(agent_params, use_deadline, show_graphics=True):
     # Set up environment and agent

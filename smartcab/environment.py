@@ -5,7 +5,7 @@ from collections import OrderedDict, namedtuple
 from simulator import Simulator
 
 PrimaryAgentPerformance = \
-    namedtuple('PrimaryAgentPerformance', 'reached_dest net_reward')
+    namedtuple('PrimaryAgentPerformance', 'reached_dest positive_reward negative_reward')
 
 
 class TrafficLight(object):
@@ -220,7 +220,8 @@ class Environment(object):
         Return a PrimaryAgentPerformance namedtuple, indicating how the
         environment's primary agent (if one exists) is doing:
         - Has the PA reached its destination?
-        - What are the PA's current net_rewards since last being reset?
+        - How many total positive rewards did the agent earn?
+        - How many total negative rewards did the agent earn?
 
         If there's no primary agent, this always returns None.
 
@@ -235,9 +236,10 @@ class Environment(object):
         pa_agent_state = self.agent_states[pa]
 
         reached_dest = (pa_agent_state['location'] == pa_agent_state['destination'])
-        net_reward = pa.net_reward
+        positive_reward = pa.positive_reward_earned
+        negative_reward = pa.negative_reward_earned
 
-        return PrimaryAgentPerformance(reached_dest, net_reward)
+        return PrimaryAgentPerformance(reached_dest, positive_reward, negative_reward)
 
     def compute_dist(self, a, b):
         """L1 distance between two points."""
