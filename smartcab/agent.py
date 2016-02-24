@@ -167,7 +167,6 @@ class LearningAgent(Agent):
 
         # Performance tracking
         self.net_reward = 0   # reward after each action
-        self.net_reward_ever_negative = False
 
         # How many times has this agent been reset?
         # This is equivalent to how many trials the agent has participated in
@@ -180,7 +179,6 @@ class LearningAgent(Agent):
         self.planner.route_to(destination)
         self.current_state = None
         self.net_reward = 0
-        self.net_reward_ever_negative = False
         self.num_resets += 1
 
     def update(self, t, debug=True):
@@ -207,8 +205,6 @@ class LearningAgent(Agent):
         # Execute action and get reward
         reward = self.env.act(self, action)
         self.net_reward += reward
-        if self.net_reward < 0:
-            self.net_reward_ever_negative = True
 
         # Calling act() causes location to change if a valid move was made
         if self.learning:
@@ -287,8 +283,8 @@ def q3_weighted_q_ave():
     agent_params = {'strategy': weighted_q_average}
     return run_with_params(agent_params, True, False)
 
-def q3_decay1():
-    agent_params = {'strategy': decay1}
+def q3_decay_logarithmic():
+    agent_params = {'strategy': decay_logarithmic}
     return run_with_params(agent_params, True, False)
 
 def plot_agent_performances(performances):
@@ -328,10 +324,8 @@ def evaluate_performance():
 if __name__ == '__main__':
     # q1_random_action()
     # performance, info = q2_max_q_value()
-    performance, info = q3_decay1()
+    performance, info = q3_decay_logarithmic()
     # results = evaluate_performance()
 
     import matplotlib.pyplot as plt
-    points_net_reward_negative = [(i, p.net_reward) for i, p in enumerate(performance) if p.net_reward_ever_negative]
-    points_net_reward_not_negative = [(i, p.net_reward) for i, p in enumerate(performance) if not p.net_reward_ever_negative]
     # plt.plot(rewards)
