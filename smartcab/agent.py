@@ -6,7 +6,7 @@ import random
 from collections import namedtuple
 from itertools import product
 from numpy.random import choice
-from math import exp
+from math import exp, log
 
 State = namedtuple('State', 'light next_waypoint')
 
@@ -38,20 +38,59 @@ def weighted_q_average(state_q_values, trial):
     probs = [q / total for q in state_q_values.itervalues()]   # normalize
     return choice(state_q_values.keys(), p=probs)
 
-def decay1(state_q_values, trial):
+def decay_exponential(state_q_values, trial, num_trials=100):
     """
-    Explore with probability p and exploit with probability (1-p), where
-    p(trial) = exp(-trial / 30)
+    Explore with probability p and exploit with probability (1-p),
+    where p(trial) = exp(-trial / 0.3 * num_trials).
 
-    The 30 was picked to decay from 1 to 0 over ~100 trials at a reasonable rate:
+    The 0.3 was picked to decay from 1 to 0 over ~100 trials at a reasonable rate:
     - On trial 0,  we explore w.p. 1
     - On trial 1,  we explore w.p. 0.967
     - On trial 10, we explore w.p. 0.717
     - On trial 50, we explore w.p. 0.189
     - On trial 99, we explore w.p. 0.037
     """
-    p = exp(-1.0 * trial / 30)
-    if p <= random.random():
+    p = exp(-1.0 * trial / (num_trials * 0.3))
+    if p >= random.random():
+        return explorer(state_q_values, trial)
+    else:
+        return exploiter(state_q_values, trial)
+
+def decay_linear(state_q_values, trial, num_trials=100):
+    """
+    Explore with probability p and exploit with probability (1-p),
+    where p(trial) is a decreasing linear function of trial.
+
+    - On trial 0,  we explore w.p. 1
+    - On trial 10, we explore w.p. 0.9
+    - On trial 50, we explore w.p. 0.5
+    - On trial 99, we explore w.p. 0.01
+    """
+    p = 1 - (1.0 * trial) / num_trials
+    if p >= random.random():   # if p < 0, then this never happens
+        return explorer(state_q_values, trial)
+    else:
+        return exploiter(state_q_values, trial)
+
+def decay_logarithmic(state_q_values, trial, num_trials=100):
+    """
+    Explore with probability p and exploit with probability (1-p),
+    where p(trial) is a decreasing logarithmic function of trial.
+
+    With 100 trials, the decay looks like:
+    - On trial 0,  we explore w.p. 1
+    - On trial 10, we explore w.p. 0.977
+    - On trial 50, we explore w.p. 0.85
+    - On trial 90, we explore w.p. 0.5
+    - On trial 95, we explore w.p. 0.35
+    - On trial 98, we explore w.p. 0.15
+    """
+    try:
+        p = log(num_trials - trial, num_trials)
+    except ValueError:
+        p = 0.0
+
+    if p >= random.random():
         return explorer(state_q_values, trial)
     else:
         return exploiter(state_q_values, trial)
@@ -235,58 +274,52 @@ def run_with_params(agent_params, use_deadline, show_graphics=True):
 
 
 def q1_random_action():
-    params = {'strategy': explorer}
-    return run_with_params(params, False)
+    agent_params = {'strategy': explorer}
+    return run_with_params(agent_params, False)
 
 
 def q2_max_q_value():
-    params = {'strategy': exploiter, 'q_boost': 1}
-    return run_with_params(params, True)
+    agent_params = {'strategy': exploiter, 'q_boost': 1}
+    return run_with_params(agent_params, True)
 
 
 def q3_weighted_q_ave():
-    params = {'strategy': weighted_q_average}
-    return run_with_params(params, True, False)
+    agent_params = {'strategy': weighted_q_average}
+    return run_with_params(agent_params, True, False)
 
 def q3_decay1():
-    params = {'strategy': decay1}
-    return run_with_params(params, True, False)
+    agent_params = {'strategy': decay1}
+    return run_with_params(agent_params, True, False)
 
 def plot_agent_performances(performances):
     pass
 
 
 def evaluate_performance():
+    """
+    Run training trials for each of many learning parameter/strategy
+    combinations, then run evaluation trials to see how well we learned.
+    """
     alpha_values = [.2, .4, .6, .8]
     gamma_values = [.2, .4, .6, .8]
-    boost_values = [0, 0.5, 1]
+    strategies = [weighted_q_average, decay1]
 
-    num_training_trials = 15
-    num_evaluation_trials = 15
+    num_training_trials = 100
+    num_evaluation_trials = 100
     all_results = dict()
 
-    show_graphics = False
+    for param_values in product(alpha_values, gamma_values, strategies):
+        alpha, gamma, strategies = param_values
 
-    for param_values in product(alpha_values, gamma_values, boost_values):
         e = Environment()
-        sim = Simulator(e, update_delay=0)
-
-        alpha, gamma, boost = param_values
+        sim = SimulatorNoGraphics(e)
         a = e.create_agent(LearningAgent, alpha=alpha, gamma=gamma, q_boost=boost)
-        # print a
         e.set_primary_agent(a, enforce_deadline=True)
 
-        # raw_input("Press ENTER to start this agent's learning trials")
-        sim.run(num_training_trials) if show_graphics else sim.run_no_graphics(num_training_trials)
+        sim.run(num_training_trials)
 
         a.learning = False
-        # print a.format_q_map()
-        # raw_input("Press ENTER to start this agent's evaluation trials")
-        perfs = sim.run(num_training_trials) if show_graphics else sim.run_no_graphics(num_evaluation_trials)
-        print perfs
-        # raw_input("Metrics available; hit ENTER to run prepare next trial")
-
-        # TODO: Update all_results[param_values]
+        perfs = sim.run(num_evaluation_trials)
         all_results[param_values] = perfs
 
     return all_results
