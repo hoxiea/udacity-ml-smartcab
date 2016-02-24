@@ -102,29 +102,6 @@ class Simulator(object):
 
         return pa_performances if pa_performances else None
 
-    def run_no_graphics(self, n_trials=1):
-        self.quit = False
-        pygame.display.quit()
-
-        # Keep track of primary agent's performance
-        pa_performances = []
-
-        # Run your trials
-        for trial in xrange(n_trials):
-            print "Simulator.run(): Trial {}".format(trial)  # [debug]
-            self.env.reset()
-            while True:
-                self.env.step()
-                if self.env.done:
-                    if self.env.primary_agent is None:
-                        break
-                    else:
-                        pa_performances.append(self.env.primary_agent_performance())
-                        break
-
-        return pa_performances if pa_performances else None
-
-
     def render(self):
         # Clear screen
         self.screen.fill(self.bg_color)
@@ -189,3 +166,28 @@ class Simulator(object):
             pygame.time.wait(self.frame_delay)
         self.screen.blit(self.font.render(pause_text, True, self.bg_color, self.bg_color), (100, self.height - 40))
         self.start_time += (time.time() - abs_pause_time)
+
+
+class SimulatorNoGraphics(object):
+
+    def __init__(self, env):
+        self.env = env
+
+    def run(self, n_trials=100):
+        # Keep track of primary agent's performance
+        pa_performances = []
+
+        # Run your trials
+        for trial in xrange(n_trials):
+            print "Simulator.run(): Trial {}".format(trial)  # [debug]
+            self.env.reset()
+            while True:
+                self.env.step()
+                if self.env.done:
+                    if self.env.primary_agent is None:
+                        break
+                    else:
+                        pa_performances.append(self.env.primary_agent_performance())
+                        break
+
+        return pa_performances if pa_performances else None
