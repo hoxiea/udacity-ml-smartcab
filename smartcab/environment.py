@@ -7,7 +7,6 @@ from simulator import Simulator
 PrimaryAgentPerformance = \
     namedtuple('PrimaryAgentPerformance', 'reached_dest positive_reward negative_reward')
 
-
 class TrafficLight(object):
     """A traffic light that switches periodically."""
 
