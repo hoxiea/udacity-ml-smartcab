@@ -179,7 +179,6 @@ class SimulatorNoGraphics(object):
 
         # Run your trials
         for trial in xrange(n_trials):
-            print "Simulator.run(): Trial {}".format(trial)  # [debug]
             self.env.reset()
             while True:
                 self.env.step()
