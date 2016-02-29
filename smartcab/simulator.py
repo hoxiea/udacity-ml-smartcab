@@ -1,7 +1,11 @@
 import os
 import time
 import random
+
 import pygame
+
+from agent import LearningAgent
+from environment import Environment
 
 
 class Simulator(object):
@@ -39,7 +43,7 @@ class Simulator(object):
         self.screen = pygame.display.set_mode(self.size)
 
         self.agent_sprite_size = (32, 32)
-        self.agent_circle_radius = 10  # radius of circle, when using simple representation
+        self.agent_circle_radius = 10  # for simple representation
         for agent in self.env.agent_states:
             agent._sprite = pygame.transform.smoothscale(pygame.image.load(os.path.join("images", "car-{}.png".format(agent.color))), self.agent_sprite_size)
             agent._sprite_size = (agent._sprite.get_width(), agent._sprite.get_height())
@@ -169,7 +173,10 @@ class Simulator(object):
 
 
 class SimulatorNoGraphics(object):
-
+    """
+    A Simulator that doesn't use pygame; instead, it just steps its Environment
+    until the Environment is done.
+    """
     def __init__(self, env):
         self.env = env
 
@@ -186,7 +193,24 @@ class SimulatorNoGraphics(object):
                     if self.env.primary_agent is None:
                         break
                     else:
-                        pa_performances.append(self.env.primary_agent_performance())
+                        perf = self.env.primary_agent_performance()
+                        pa_performances.append(perf)
                         break
-
         return pa_performances if pa_performances else None
+
+
+def initialize_simulator_environment(graphics=False, **learning_agent_params):
+    e = Environment()
+    sim = Simulator(e) if graphics else SimulatorNoGraphics(e)
+    a = e.create_agent(LearningAgent, **learning_agent_params)
+    e.set_primary_agent(a, enforce_deadline=True)
+    return sim, e
+
+
+def run_with_params(agent_params, use_deadline, graphics=True):
+    sim, e = initialize_simulator_environment(graphics=graphics, **agent_params)
+    agent_performance = sim.run(100)
+    agent_info = e.primary_agent.agent_info
+    return agent_performance, agent_info
+
+
