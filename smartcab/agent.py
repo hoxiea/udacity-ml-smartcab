@@ -2,20 +2,13 @@ import random
 from collections import namedtuple
 from itertools import product
 
-from environment import Agent, Environment
+from environment import Agent
 from planner import RoutePlanner
-from simulator import Simulator, SimulatorNoGraphics
 from strategies import *
 
 
 # Agent's state: the current traffic light, and where it should go next
 AgentState = namedtuple('AgentState', ['light', 'next_waypoint'])
-
-def generate_all_agentstates():
-    lights = ['green', 'red']   # as returned by Environment.sense
-    waypoints = [a for a in Environment.valid_actions if a is not None]
-    for light, next_waypoint in product(lights, waypoints):
-        yield AgentState(light=light, next_waypoint=next_waypoint)
 
 
 class LearningAgent(Agent):
@@ -90,7 +83,8 @@ class LearningAgent(Agent):
             # Equation 21.8 in Artificial Intelligence: A Modern Approach, 2e
             old_q = self.q_map[self.current_state][action]
             best_future_q = max(self.q_map[new_state].itervalues())
-            new_q = old_q + self.alpha * (reward + self.gamma * best_future_q - old_q)
+            new_q = self.alpha * (reward + self.gamma * best_future_q - old_q)
+            new_q += old_q
             self.q_map[self.current_state][action] = new_q
 
         if debug:
@@ -106,8 +100,8 @@ class LearningAgent(Agent):
     # Formatting
     def __str__(self):
         s = "LearningAgent: learning={}, alpha={}, gamma={}, boost={}, num_trials={}"
-        return s.format(self.learning, self.alpha, self.gamma, self.q_boost, \
-            self.num_trials)
+        return s.format(self.learning, self.alpha, self.gamma, self.q_boost,
+                        self.num_trials)
 
     def format_q_map(self):
         output = []
@@ -118,18 +112,17 @@ class LearningAgent(Agent):
         return "\n".join(output)
 
     # Helper methods
-    @staticmethod
-    def make_initial_q_map(strategy, q_boost):
+    def make_initial_q_map(self, strategy, q_boost):
         q_map = dict()
-        for state in generate_all_agentstates():
+        for state in self.generate_all_agentstates():
             if strategy == weighted_q_average:
-                q_map[state] = {a: 1.0 for a in Environment.valid_actions}
+                q_map[state] = {a: 1.0 for a in self.env.valid_actions}
             else:
-                q_map[state] = {a: random.random() for a in Environment.valid_actions}
+                q_map[state] = {a: random.random() for a in self.env.valid_actions}
 
         if q_boost:
             for state, q_values in q_map.iteritems():
-                for action in Environment.valid_actions:
+                for action in self.env.valid_actions:
                     if state.next_waypoint == action:
                         q_map[state][action] += q_boost
         return q_map
@@ -161,6 +154,12 @@ class LearningAgent(Agent):
             print "Selected action: {}".format(action)
         return self.strategy(q_values_current_state, self.num_trials)
 
+    def generate_all_agentstates(self):
+        lights = ['green', 'red']   # as returned by Environment.sense
+        waypoints = [a for a in self.env.valid_actions if a]
+        for light, next_waypoint in product(lights, waypoints):
+            yield AgentState(light=light, next_waypoint=next_waypoint)
+
     # Info properties
     @property
     def agent_info(self):
@@ -185,22 +184,6 @@ class LearningAgent(Agent):
     @property
     def num_trials(self):
         return self.num_resets
-
-
-# General Helper Methods
-def initialize_simulator_environment(graphics=False, **learning_agent_params):
-    e = Environment()
-    sim = Simulator(e) if graphics else SimulatorNoGraphics(e)
-    a = e.create_agent(LearningAgent, **learning_agent_params)
-    e.set_primary_agent(a, enforce_deadline=True)
-    return sim, e
-
-
-def run_with_params(agent_params, use_deadline, graphics=True):
-    sim, e = initialize_simulator_environment(graphics=graphics, **agent_params)
-    agent_performance = sim.run(100)
-    agent_info = e.primary_agent.agent_info
-    return agent_performance, agent_info
 
 
 # Solutions to various questions asked in the assignment
