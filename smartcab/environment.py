@@ -1,11 +1,9 @@
 import time
 import random
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 
-from simulator import Simulator
+from agentperformance import PrimaryAgentPerformance
 
-PrimaryAgentPerformance = \
-    namedtuple('PrimaryAgentPerformance', 'reached_dest positive_reward negative_reward')
 
 class TrafficLight(object):
     """A traffic light that switches periodically."""
