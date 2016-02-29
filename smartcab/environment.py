@@ -50,15 +50,18 @@ class Environment(object):
         self.block_size = 100
         self.intersections = OrderedDict()
         self.roads = []
+
+        # A traffic light at each intersection
         for x in xrange(self.bounds[0], self.bounds[2] + 1):
             for y in xrange(self.bounds[1], self.bounds[3] + 1):
-                self.intersections[(x, y)] = TrafficLight()  # a traffic light at each intersection
+                self.intersections[(x, y)] = TrafficLight()
 
+        # Roads between intersections
         for a in self.intersections:
             for b in self.intersections:
                 if a == b:
                     continue
-                if (abs(a[0] - b[0]) + abs(a[1] - b[1])) == 1:  # L1 distance = 1
+                if self.manhattan_dist(a, b) == 1:
                     self.roads.append((a, b))
 
         # Dummy agents
@@ -92,12 +95,12 @@ class Environment(object):
         destination = random.choice(self.intersections.keys())
 
         # Ensure starting location and destination are not too close
-        while self.compute_dist(start, destination) < 4:
+        while self.manhattan_dist(start, destination) < 4:
             start = random.choice(self.intersections.keys())
             destination = random.choice(self.intersections.keys())
 
         start_heading = random.choice(self.valid_headings)
-        deadline = self.compute_dist(start, destination) * 5
+        deadline = self.manhattan_dist(start, destination) * 5
         print "Environment.reset(): Trial set up with start = {}, destination = {}, deadline = {}".format(start, destination, deadline)
 
         # Initialize agent(s)
@@ -240,8 +243,9 @@ class Environment(object):
 
         return PrimaryAgentPerformance(reached_dest, positive_reward, negative_reward)
 
-    def compute_dist(self, a, b):
-        """L1 distance between two points."""
+    @staticmethod
+    def manhattan_dist(a, b):
+        """Manhattan == L1 distance between two points."""
         return abs(b[0] - a[0]) + abs(b[1] - a[1])
 
     @property
