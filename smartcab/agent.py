@@ -160,6 +160,12 @@ class LearningAgent(Agent):
         for light, next_waypoint in product(lights, waypoints):
             yield AgentState(light=light, next_waypoint=next_waypoint)
 
+    def stop_learning(self):
+        self.learning = False
+
+    def start_learning(self):
+        self.learning = True
+
     # Info properties
     @property
     def agent_info(self):
