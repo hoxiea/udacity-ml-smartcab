@@ -7,6 +7,32 @@ import pygame
 from agent import LearningAgent
 from environment import Environment
 
+class SimulatorNoGraphics(object):
+    """
+    A Simulator that doesn't use pygame; instead, it just steps its Environment
+    until the Environment is done.
+    """
+    def __init__(self, env):
+        self.env = env
+
+    def run(self, n_trials=100):
+        # Keep track of primary agent's performance
+        pa_performances = []
+
+        # Run your trials
+        for trial in xrange(n_trials):
+            self.env.reset()
+            while True:
+                self.env.step()
+                if self.env.done:
+                    if self.env.primary_agent is None:
+                        break
+                    else:
+                        perf = self.env.primary_agent_performance()
+                        pa_performances.append(perf)
+                        break
+        return pa_performances if pa_performances else None
+
 
 class Simulator(object):
     """PyGame-based simulator to create a dynamic environment."""
@@ -172,33 +198,6 @@ class Simulator(object):
         self.start_time += (time.time() - abs_pause_time)
 
 
-class SimulatorNoGraphics(object):
-    """
-    A Simulator that doesn't use pygame; instead, it just steps its Environment
-    until the Environment is done.
-    """
-    def __init__(self, env):
-        self.env = env
-
-    def run(self, n_trials=100):
-        # Keep track of primary agent's performance
-        pa_performances = []
-
-        # Run your trials
-        for trial in xrange(n_trials):
-            self.env.reset()
-            while True:
-                self.env.step()
-                if self.env.done:
-                    if self.env.primary_agent is None:
-                        break
-                    else:
-                        perf = self.env.primary_agent_performance()
-                        pa_performances.append(perf)
-                        break
-        return pa_performances if pa_performances else None
-
-
 def initialize_simulator_environment(agent_params=None, graphics=False,
         use_deadline=True):
     if agent_params is None:
@@ -225,5 +224,3 @@ def run_with_params(agent_params=None, **kwargs):
     agent_performance = sim.run(num_trials)
     agent_info = e.primary_agent.agent_info
     return agent_performance, agent_info
-
-

@@ -1,6 +1,6 @@
 import unittest
-import numpy as np
 
+from agentperformance import PerformanceTracker
 from simulator import run_with_params, initialize_simulator_environment
 from strategies import explorer, exploiter
 

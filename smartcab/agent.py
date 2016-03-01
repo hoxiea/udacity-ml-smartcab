@@ -8,7 +8,7 @@ from strategies import *
 
 
 # Agent's state: the current traffic light, and where it should go next
-AgentState = namedtuple('AgentState', ['light', 'next_waypoint'])
+AgentState = namedtuple('AgentState', ('light', 'next_waypoint'))
 
 
 class LearningAgent(Agent):
@@ -195,11 +195,3 @@ def q1_random_action():
 def q2_max_q_value():
     agent_params = {'strategy': exploiter, 'q_boost': 1}
     return run_with_params(agent_params, True, False)
-
-
-
-if __name__ == '__main__':
-    # q1_random_action()
-    # training, evaluation = evaluate_performance_helper(0.5, 0.7, decay_logarithmic)
-    # results = evaluate_performance()
-    pass

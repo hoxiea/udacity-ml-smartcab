@@ -1,8 +1,8 @@
+import numpy as np
+
 from collections import namedtuple
 from simulator import initialize_simulator_environment
-
-PrimaryAgentPerformance = \
-    namedtuple('PrimaryAgentPerformance', 'reached_dest positive_reward negative_reward')
+from strategies import *
 
 class PerformanceTracker(object):
     def __init__(self, performances, agent_info):
@@ -39,8 +39,9 @@ def evaluate_performance_helper(alpha, gamma, strategy, \
     for _ in xrange(num_repetitions):
         sim, e = initialize_simulator_environment(agent_params)
         training_performances = sim.run(num_training_trials)
-        a.learning = False
+        e.primary_agent.learning = False
         evaluation_performances = sim.run(num_evaluation_trials)
     return training_performances, evaluation_performances
 
-
+if __name__ == '__main__':
+    t, e = evaluate_performance_helper(0.5, 0.8, explorer)
