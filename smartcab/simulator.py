@@ -211,6 +211,20 @@ def initialize_simulator_environment(agent_params=None, graphics=False,
 
 
 def run_with_params(agent_params=None, **kwargs):
+    """
+    Run some specified number of trials with a LearningAgent that's learning.
+
+    Supported agent_param keys: see LearningAgent.__init__
+
+    Supported kwargs (default):
+    - use_deadline: should the simulation enforce a deadline? (True)
+    - graphics: should a pygame window show the simulation graphics? (False)
+    - num_trials: how many trials should be run? (100)
+
+    Returns:
+    - agent_performance: a list of PrimaryAgentPerformances, one for each trial
+    - agent_info: a dictionary of agent parameters and their values
+    """
     if agent_params is None:
         agent_params = {}
 
