@@ -1,6 +1,6 @@
-import random
 from collections import namedtuple
 from itertools import product
+import random
 
 from environment import Agent
 from planner import RoutePlanner
@@ -197,39 +197,9 @@ def q2_max_q_value():
     return run_with_params(agent_params, True, False)
 
 
-# Performance evaluation
-def evaluate_performance():
-    """
-    Run training trials for each of many learning parameter/strategy
-    combinations, then run evaluation trials to see how well we learned.
-    """
-    alpha_values = [.2, .4, .6, .8]
-    gamma_values = [.2, .4, .6, .8]
-    strategies = [weighted_q_average, decay_logarithmic, decay_linear, decay_exponential]
-
-    num_training_trials = 100
-    num_evaluation_trials = 100
-    all_results = dict()
-
-    for param_values in product(alpha_values, gamma_values, strategies):
-        evaluate_performance_helper(*param_values)
-
-    return all_results
-
-
-def evaluate_performance_helper(alpha, gamma, strategy, num_training_trials=100, num_evaluation_trials=100, num_repetitions=10):
-    for _ in xrange(num_repetitions):
-        sim, e = initialize_simulator_environment(alpha=alpha, gamma=gamma, strategy=strategy)
-        training_performances = sim.run(num_training_trials)
-        a.learning = False
-        evaluation_performances = sim.run(num_evaluation_trials)
-    return training_performances, evaluation_performances
-
 
 if __name__ == '__main__':
     # q1_random_action()
-    performance, info = q2_max_q_value()
+    # training, evaluation = evaluate_performance_helper(0.5, 0.7, decay_logarithmic)
     # results = evaluate_performance()
-
-    # import matplotlib.pyplot as plt
-    # plt.plot(rewards)
+    pass

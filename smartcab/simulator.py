@@ -1,6 +1,6 @@
 import os
-import time
 import random
+import time
 
 import pygame
 
@@ -199,17 +199,30 @@ class SimulatorNoGraphics(object):
         return pa_performances if pa_performances else None
 
 
-def initialize_simulator_environment(graphics=False, **learning_agent_params):
+def initialize_simulator_environment(agent_params=None, graphics=False,
+        use_deadline=True):
+    if agent_params is None:
+        agent_params = {}
+
     e = Environment()
     sim = Simulator(e) if graphics else SimulatorNoGraphics(e)
-    a = e.create_agent(LearningAgent, **learning_agent_params)
-    e.set_primary_agent(a, enforce_deadline=True)
+    a = e.create_agent(LearningAgent, **agent_params)
+    e.set_primary_agent(a, enforce_deadline=use_deadline)
     return sim, e
 
 
-def run_with_params(agent_params, use_deadline, graphics=True):
-    sim, e = initialize_simulator_environment(graphics=graphics, **agent_params)
-    agent_performance = sim.run(100)
+def run_with_params(agent_params=None, **kwargs):
+    if agent_params is None:
+        agent_params = {}
+
+    use_deadline = kwargs.pop('use_deadline', True)
+    graphics = kwargs.pop('graphics', False)
+    num_trials = kwargs.pop('num_trials', 100)
+    if kwargs:
+        raise TypeError('Unexpected **kwargs: %r' % kwargs)
+
+    sim, e = initialize_simulator_environment(agent_params, graphics, use_deadline)
+    agent_performance = sim.run(num_trials)
     agent_info = e.primary_agent.agent_info
     return agent_performance, agent_info
 

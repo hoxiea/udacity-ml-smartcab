@@ -1,6 +1,6 @@
-import time
-import random
 from collections import OrderedDict
+import random
+import time
 
 from agentperformance import PrimaryAgentPerformance
 
