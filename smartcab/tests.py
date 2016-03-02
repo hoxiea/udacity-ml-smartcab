@@ -1,6 +1,6 @@
 import unittest
 
-from agentperformance import PerformanceTracker
+from agentperformance import TrainEvalPerformance
 from simulator import run_with_params, initialize_simulator_environment
 from strategies import explorer, exploiter
 
@@ -28,14 +28,14 @@ class TestAgentBehavior(unittest.TestCase):
         """Random choices lead to destination <30% of the time."""
         params = {'strategy': explorer}
         performances, agent_info = run_with_params(params)
-        pt = PerformanceTracker(performances, agent_info)
-        self.assertLess(pt.prop_reached_destination, 0.3)
+        pt = TrainEvalPerformance(None, performances, agent_info)
+        self.assertLess(pt.prop_eval_reached_destination, 0.3)
 
     def test_boosted_exploiter_usually_reaches_destination(self):
         """Exploiter with boost=1 reaches destination >80% of the time."""
         params = {'strategy': exploiter, 'q_boost': 1.0}
         performances, agent_info = run_with_params(params)
-        pt = PerformanceTracker(performances, agent_info)
-        self.assertGreater(pt.prop_reached_destination, 0.8)
+        pt = TrainEvalPerformance(None, performances, agent_info)
+        self.assertGreater(pt.prop_eval_reached_destination, 0.8)
 
 
