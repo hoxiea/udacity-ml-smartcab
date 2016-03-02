@@ -16,6 +16,7 @@ def explorer(state_q_values, trial):
     """
     return choice(state_q_values.keys())
 
+
 def exploiter(state_q_values, trial):
     """
     An exploiter always returns the action with the largest Q value.
@@ -23,18 +24,6 @@ def exploiter(state_q_values, trial):
     """
     return max(state_q_values, key=state_q_values.get)
 
-def weighted_q_average(state_q_values, trial):
-    """
-    Take a weighted random sample of the available actions, where the weights
-    are the Q values. The trial is ignored.
-
-    https://docs.python.org/2/library/stdtypes.html#dict.items says that if a
-    dictionary isn't modified, then the order of items returned by the methods
-    used below will remain consistent.
-    """
-    total = sum(w for w in state_q_values.itervalues())
-    probs = [q / total for q in state_q_values.itervalues()]   # normalize
-    return choice(state_q_values.keys(), p=probs)
 
 def decay_exponential(state_q_values, trial, num_trials=100):
     """
@@ -54,6 +43,7 @@ def decay_exponential(state_q_values, trial, num_trials=100):
     else:
         return exploiter(state_q_values, trial)
 
+
 def decay_linear(state_q_values, trial, num_trials=100):
     """
     Explore with probability p and exploit with probability (1-p),
@@ -69,6 +59,7 @@ def decay_linear(state_q_values, trial, num_trials=100):
         return explorer(state_q_values, trial)
     else:
         return exploiter(state_q_values, trial)
+
 
 def decay_logarithmic(state_q_values, trial, num_trials=100):
     """
@@ -92,6 +83,3 @@ def decay_logarithmic(state_q_values, trial, num_trials=100):
         return explorer(state_q_values, trial)
     else:
         return exploiter(state_q_values, trial)
-
-
-
